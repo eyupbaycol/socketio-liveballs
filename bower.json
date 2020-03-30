@@ -1,0 +1,11 @@
+{
+  "name": "socketio-live-balls",
+  "description": "",
+  "main": "",
+  "license": "MIT",
+  "homepage": "https://github.com/eyupbaycol/socketio-liveballs",
+  "dependencies": {
+    "angular": "^1.7.9",
+    "semantic": "^2.4.1"
+  }
+}
