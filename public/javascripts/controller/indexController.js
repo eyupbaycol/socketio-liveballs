@@ -1,7 +1,8 @@
 app.controller("indexController", [
   "$scope",
   "indexFactory",
-  ($scope, indexFactory) => {
+  "configFactory",
+  ($scope, indexFactory, configFactory) => {
     $scope.messages = [];
     $scope.players = {};
     $scope.init = () => {
@@ -33,8 +34,10 @@ app.controller("indexController", [
         reconnectionDelay: 600
       };
       try {
+        const socketUrl = await configFactory.getConfig();
+        console.log(socketUrl);
         const socket = await indexFactory.connectSocket(
-          "http://localhost:3000",
+          socketUrl.data.socketUrl,
           connectionOptions
         );
         // console.log("Bağlantı Gerçekleşti", socket);
