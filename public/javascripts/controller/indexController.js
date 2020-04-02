@@ -27,103 +27,104 @@ app.controller("indexController", [
           .hide();
       }, 2000);
     }
-    function initSocket(username) {
+    async function initSocket(username) {
       const connectionOptions = {
         reconnectionAttempts: 3,
         reconnectionDelay: 600
       };
-      indexFactory
-        .connectSocket("http://localhost:3000", connectionOptions)
-        .then(socket => {
-          // console.log("Bağlantı Gerçekleşti", socket);
-          socket.emit("newUser", { username });
+      try {
+        const socket = await indexFactory.connectSocket(
+          "http://localhost:3000",
+          connectionOptions
+        );
+        // console.log("Bağlantı Gerçekleşti", socket);
+        socket.emit("newUser", { username });
 
-          socket.on("initPlayers", players => {
-            $scope.players = players;
-            $scope.$apply();
-          });
+        socket.on("initPlayers", players => {
+          $scope.players = players;
+          $scope.$apply();
+        });
 
-          socket.on("newUser", data => {
-            const messageData = {
-              type: {
-                code: 0,
-                message: "katıldı"
-              }, //info
-              username: data.username
-            };
-            $scope.messages.push(messageData);
-            $scope.players[data.id] = data;
-            scrollTop();
-            $scope.$apply();
-          });
+        socket.on("newUser", data => {
+          const messageData = {
+            type: {
+              code: 0,
+              message: "katıldı"
+            }, //info
+            username: data.username
+          };
+          $scope.messages.push(messageData);
+          $scope.players[data.id] = data;
+          scrollTop();
+          $scope.$apply();
+        });
 
-          socket.on("disUser", user => {
-            const messageData = {
-              type: {
-                code: 0,
-                message: "ayrıldı"
-              }, //info
-              username: user.username
-            };
-            $scope.messages.push(messageData);
-            delete $scope.players[user.id];
-            $scope.$apply();
-          });
-          socket.on("animate", data => {
-            $("#" + data.socketId).animate(
+        socket.on("disUser", user => {
+          const messageData = {
+            type: {
+              code: 0,
+              message: "ayrıldı"
+            }, //info
+            username: user.username
+          };
+          $scope.messages.push(messageData);
+          delete $scope.players[user.id];
+          $scope.$apply();
+        });
+        socket.on("animate", data => {
+          $("#" + data.socketId).animate(
+            {
+              left: data.x,
+              top: data.y
+            },
+            () => {
+              animate = false;
+            }
+          );
+        });
+        socket.on("newMessage", data => {
+          $scope.messages.push(data);
+          $scope.$apply();
+          showBubble(data.socketId, data.text);
+          scrollTop();
+        });
+        let animate = false;
+        $scope.onClickPlayer = $event => {
+          if (!animate) {
+            let x = $event.offsetX;
+            let y = $event.offsetY;
+            animate = true;
+            $("#" + socket.id).animate(
               {
-                left: data.x,
-                top: data.y
+                left: x,
+                top: y
               },
               () => {
                 animate = false;
               }
             );
-          });
-          socket.on("newMessage", data => {
-            $scope.messages.push(data);
-            $scope.$apply();
-            showBubble(data.socketId, data.text);
-            scrollTop();
-          });
-          let animate = false;
-          $scope.onClickPlayer = $event => {
-            if (!animate) {
-              let x = $event.offsetX;
-              let y = $event.offsetY;
-              animate = true;
-              $("#" + socket.id).animate(
-                {
-                  left: x,
-                  top: y
-                },
-                () => {
-                  animate = false;
-                }
-              );
-              socket.emit("animate", { x, y });
-            }
+            socket.emit("animate", { x, y });
+          }
+        };
+        $scope.newMessage = () => {
+          let message = $scope.message;
+          const messageData = {
+            type: {
+              code: 1
+            },
+            username: username,
+            text: message
           };
-          $scope.newMessage = () => {
-            let message = $scope.message;
-            const messageData = {
-              type: {
-                code: 1
-              },
-              username: username,
-              text: message
-            };
-            $scope.messages.push(messageData);
-            $scope.message = "";
+          $scope.messages.push(messageData);
+          $scope.message = "";
 
-            socket.emit("newMessage", messageData);
-            showBubble(socket.id, message);
-            scrollTop();
-          };
-        })
-        .catch(err => {
-          console.log(err);
-        });
+          socket.emit("newMessage", messageData);
+          showBubble(socket.id, message);
+          scrollTop();
+        };
+      } catch (e) {
+        console.log(e);
+      }
     }
   }
 ]);
